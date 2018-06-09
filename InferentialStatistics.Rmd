@@ -1,0 +1,85 @@
+---
+title: "Inferential Statistics - Z-stat and T-stat"
+output: html_notebook
+---
+
+```{python}
+import math
+import scipy.stats as st
+
+# Alpha level class
+class AlphaZ:
+    def __init__(self, level):
+        
+        self.level = level # alpha level as a porportion out of 1
+        self.z1 = st.norm.ppf(1 - level) # critical z-score for one tailed distribution
+        self.z2 = st.norm.ppf(1 - level/2) # critical z-score for two tailed distribution
+        
+class StatsZ:
+    a1 = AlphaZ(.05) # alpha1 .05
+    a2 = AlphaZ(.01) # alpha2 .01 
+    a3 = AlphaZ(.001) # alpha3 .001
+    
+    def __init__(self, mu, sigma, N, x):
+        self.mu = mu # population mean
+        self.sigma = sigma # population standard deviation
+        self.N = N # sample size
+        self.x = x # sample mean
+        self.z = (self.x - self.mu) * math.sqrt(self.N) / self.sigma # calculates the z-score
+    
+    def getProb(self):
+        return st.norm.cdf(self.z) # calculates the probability from a given z-score
+    def getProbVal(self, val):
+        return st.norm.cdf(val)
+
+class AlphaT:
+    def __init__(self, level, df): # level - the alpha level, df - the degrees of freedom
+        
+        self.level = level # alpha level as a porportion out of 1
+        self.t1 = st.t.ppf(1 - level, df) # critical t-score for one tailed distribution
+        self.t2 = st.t.ppf(1 - level/2, df) # critical t-score for two tailed distribution
+        
+class StatsT:
+    def __init__(self, mu, N, x, S):
+        self.mu = mu # population mean
+        self.N = N # sample size
+        self.x = x # sample mean
+        self.S = S # sample standard deviation
+        self.SEM = S /math.sqrt(N) # sample t test
+        self.df = N - 1 # degrees of freedom
+        self.MD = x - mu # mean difference
+        self.t = self.MD / (S / (math.sqrt(N)))
+        self.cohenD = (self.x - self.mu) /self.S
+        self.rsquared = math.pow(self.t, 2) / (math.pow(self.t,2) + self.df)
+        
+        self.a1 = AlphaT(.05, self.df) # alpha1 .05
+        self.a2 = AlphaT(.01, self.df) # alpha2 .01
+        self.a3 = AlphaT(.001, self.df) # alpha3 .001
+    
+    def getProb(self):
+        return 1 - st.t.cdf(self.t, self.df) # calculates the probability from a given t-stat
+    
+    def getProbVal(self, tVal):
+        return 1 - st.t.cdf(tVal, self.df)
+    
+    def getPVal(self, tVal, isTwoTailed):
+        if(isTwoTailed):
+            return 2 *(1 - st.t.cdf(tVal, self.df))
+        else:
+            return (1 - st.t.cdf(tVal, self.df))
+            
+tSanta = StatsT(4.8, 10, 7.8, 1.33)
+print(tSanta.SEM)
+
+```
+
+```{python}
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+

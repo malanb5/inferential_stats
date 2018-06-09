@@ -1,0 +1,221 @@
+---
+title: "Stoops Effect"
+author: Matthew Bladek
+output:
+  html_document:
+    df_print: paged
+---
+
+###What is the Stroop Effect?
+
+"In psychology, the Stroop effect is a demonstration of interference in the 
+reaction time of a task.
+
+When the name of a color (e.g., "blue", "green", or "red") is printed in a color
+which is not denoted by the name (i.e., the word "red" printed in blue ink 
+instead of red ink), naming the color of the word takes longer and is more prone 
+to errors than when the color of the ink matches the name of the color."
+<https://en.wikipedia.org/wiki/Stroop_effect>
+
+### Stroop Task
+"In a Stroop task, participants are presented with a list of words, with each 
+word displayed in a color of ink. The participant’s task is to say out loud the 
+color of the ink in which the word is printed. The task has two conditions: a congruent words condition, and an incongruent words condition. In the congruent 
+words condition, the words being displayed are color words whose names match the colors in which they are printed: for example RED, BLUE. In the incongruent words
+condition, the words displayed are color words whose names do not match the 
+colors in which they are printed: for example PURPLE, ORANGE. In each case, we
+measure the time it takes to name the ink colors in equally-sized lists. Each participant will go through and record a time from each condition."
+
+<https://docs.google.com/document/d/1-OkpZLjG_kX9J6LIQ5IltsqMzVWjh36QpnP2RYpVdPU/pub?embedded=True>
+
+### Experiment Design
+The experiment was a website where it measured the time it took to name several 
+words in both a base case and a treatment case.  The treatment being whether the 
+words and the colors were congruent or not.
+
+<https://faculty.washington.edu/chudler/java/ready.html>
+
+In this experiment the dependent variable is the reaction time to name all of the
+words on the screen.  We will refer to this as the "reaction time" from here on
+out.  Our independent variable or treatment is whether the words are congruent
+with their color or not.  
+
+The null hypothesis is that there is no difference between reaction time or that
+having incongruent colors actually decreases the reaction time.
+
+The alternative hypothesis is that there is an increase in reaction time.  
+We suspect that having incongruent colors would cause mental dissonance
+and thus positively affect reaction time.  Thus we will perform a 1 sided t-test
+in the positive direction.
+
+The data provided was from Udacity, there were 24 observations giving the reaction
+time before and after the treatment.  The time is in seconds.  I took the test
+myself with a Congruent time of: 10.866 seconds and a Incongruent time of: 11.059.
+We will addd this to our exisiting data to have a total of 25 observations
+
+```{r echo = F, message= F, warning=F}
+library(ggplot2)
+library(dplyr)
+setwd('~/__Education/R/Udacity_Data_Analysis/InferentialStats')
+stroop <- read.csv('stroop.csv')
+```
+
+
+
+```{r echo = F, message= F, warning=F}
+stroop[nrow(stroop) + 1, ] = list(10.886, 11.059)
+stroop$diff <- stroop$Incongruent - stroop$Congruent
+SDofDiff <- sd(stroop$diff)
+
+mstroop <- subset(stroop, select = -c(diff))
+mstroop$Type <- "Congruent"
+
+# Restacked the data
+for(row in 1:nrow(mstroop)){
+  mstroop[nrow(mstroop) + 1, "Congruent"] <- mstroop[row, "Incongruent"] 
+  mstroop[nrow(mstroop), "Type"] <- "Incongruent"
+}
+mstroop <- subset(mstroop, select = -c(Incongruent))
+
+names(mstroop)[names(mstroop) == "Congruent"] <- "ReactionTime"
+
+mstroop$Type <- factor(mstroop$Type)
+
+```
+
+### The Reaction Time Histrogram
+```{r echo = F, message= F, warning=F}
+ggplot(mstroop) +
+  geom_freqpoly(aes(x = mstroop$ReactionTime, color = Type), binwidth = 1) +
+  xlab("Reaction Time (sec)")
+```
+
+As we can see the distriubtion of the Congruent words and colors was centered
+less than the Incongruent letters.  Both were roughly normally distributed.
+
+There were two outliers above 30 sec for incongruent words.
+
+### The Reaction Time BoxPlot
+```{r echo = F, message= F, warning=F}
+ggplot(mstroop, aes(x = Type, y = ReactionTime)) +
+  geom_boxplot()
+```
+
+A box plot the two types shows a clear shift in the reaction time between the two.
+We also see two outliers in the data >30 seconds which lie around 2 standard
+deviations above the mean.  
+
+We will remove these two cases from our study as they
+are significant outliers.
+
+```{r echo=FALSE}
+remove_outlier <- function(df){
+  for(row in 1:nrow(df)){
+    if(df[row, "Incongruent"] > 30){
+      df[row, "Incongruent"] = NA
+    }
+  }
+
+  df <- df[complete.cases(df), ]
+}
+stroop <- remove_outlier(stroop)
+```
+
+### Experimental Results
+
+Statistic  |Congruent (sec) | Incongruent (sec) | Differences (sec)
+-- | -- | -- | --
+Mean | 13.81 | 20.43 | 6.624 
+SD  | | | 3.6077
+
+Statistic | Value  
+-- | --
+Sample Size (N) |  23
+Degrees of Freedom (DF)  | 22
+Alpha Level | .05
+One or Two sided | One sided, positive
+tcritical | 1.7138
+Average Mean Difference | 6.624 sec
+Standard Eror of the Mean | 0.752 sec
+Cohen's D | 1.835
+R^2 | 77.8%
+Margin of Error | 1.292 sec
+Confidence Interval 95% Upper | 7.912 sec
+Confidence Interval 95% Lower | 5.328 sec
+t | 8.800
+p-value | 5.852e-09
+
+###Results:
+CI = (5.328, 7.912)
+
+t(22) = 8.800, p = 5.852e-09 < 0.05, one-tailed
+
+The results are clear that there is an extremely low probability that reaction
+time is decreased or not changed by the treatment.  Therefore, we reject the null hypothesis in favor of the alternative hypothesis that the
+color congruency of the words does affect reaction time.
+
+###Extensions
+Exentsions of this project is to see what exactly is at the root of the difference.
+One might hypothesize that it's the brains connection between color and writing
+that has to be reprogrammed which casuses this lag.  Another study might involve
+people who speak a foriegn language and give them this test.  There is no built
+up association between the color and the word in the brain therefore one would
+not expect to see that there would be a lag.  A longitudinal extension of this
+would be to take this same group over a period of time, giving them the same test
+and observing the differences once they start making the accociations between
+the words and colors.
+
+```{python echo = F, message= F, warning=F}
+import math
+import scipy.stats as st
+
+# class for the alpha level
+class AlphaT:
+    def __init__(self, level, df): # level - the alpha level, df - the degrees of freedom
+        
+        self.level = level # alpha level as a porportion out of 1
+        self.t1 = st.t.ppf(1 - level, df) # critical t-score for one tailed distribution
+        self.t2 = st.t.ppf(1 - level/2, df) # critical t-score for two tailed distribution
+   
+# class for a t-test statistic
+class StatsT:
+    def __init__(self, mu, N, x, S):
+        self.mu = mu # population mean
+        self.N = N # sample size
+        self.x = x # sample mean
+        self.S = S # sample standard deviation
+        self.SEM = S /math.sqrt(N) # sample t test
+        self.df = N - 1 # degrees of freedom
+        self.MD = x - mu # mean difference
+        self.t = self.MD / (S / (math.sqrt(N)))
+        self.cohenD = (self.x - self.mu) /self.S
+        self.rsquared = math.pow(self.t, 2) / (math.pow(self.t,2) + self.df)
+        
+        self.a1 = AlphaT(.05, self.df) # alpha1 .05
+        self.a2 = AlphaT(.01, self.df) # alpha2 .01
+        self.a3 = AlphaT(.001, self.df) # alpha3 .001
+    
+    def getProb(self):
+        return 1 - st.t.cdf(self.t, self.df) # calculates the probability from a given t-stat
+    
+    def getProbVal(self, tVal):
+        return 1 - st.t.cdf(tVal, self.df)
+    
+    def getPVal(self, tVal, isTwoTailed):
+        if(isTwoTailed):
+            return 2 *(1 - st.t.cdf(tVal, self.df))
+        else:
+            return (1 - st.t.cdf(tVal, self.df))
+            
+stroopT = StatsT(13.81, 23, 20.43, 3.6077)
+
+#print(stroopT.a1.t1)
+#print(stroopT.SEM)
+#print(stroopT.SEM * stroopT.a1.t1)
+#print(stroopT.t)
+#print(stroopT.cohenD)
+#print(stroopT.rsquared)
+#print(stroopT.getPVal(stroopT.t, False))
+#print(stroopT.MD + stroopT.SEM * stroopT.a1.t1)
+
+```
